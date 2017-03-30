@@ -63,7 +63,8 @@ void buildSkeleton_K (Skeleton *sk)
     }
     // Create elements
     Element e1(0,1);
-    for (int i = 0; i <= sk->type; i++)
+    sk->elements.push_back(e1);
+    for (int i = 0; i < sk->type; i++)
     {
         Element e2(1,i+2); 
         sk->elements.push_back(e2);
