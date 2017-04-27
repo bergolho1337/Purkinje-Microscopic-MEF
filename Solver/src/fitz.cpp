@@ -14,7 +14,7 @@ void setFunctions__Fitz (Func *f, int num_eq)
 
 double I_stim__Fitz (int point, double t)
 {
-    // Somente os 3 primeiros pontos ficam como celulas de estimulo
+    // Somente os 2 primeiros pontos ficam como celulas de estimulo
     if (point <= 1)
     {
         // Somente nesse periodo de tempo que o estimulo ira ocorrer

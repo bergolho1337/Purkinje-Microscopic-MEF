@@ -25,3 +25,28 @@ void printVector (char *str, double *b, int N)
     printf("%e\n",b[i]);
   printf("\n");
 }
+
+// Imprime a procentagem do servico que jah se encontra pronto
+void printProgress (int iter, int max_iter)
+{
+  double perc = iter / (double)max_iter;
+  fprintf(stdout,"\rProgress -- %.1lf%%",perc*100.0);
+  fflush(stdout);
+}
+
+void printProgress2 (int iter, int max_iter)
+{
+  double progress = iter / (double)max_iter;
+  int barWidth = 100;
+
+  std::cout << "[";
+  int pos = barWidth * progress;
+  for (int i = 0; i < barWidth; ++i) 
+  {
+      if (i < pos) std::cout << "=";
+      else if (i == pos) std::cout << ">";
+      else std::cout << " ";
+  }
+  std::cout << "] " << int(progress * 100.0) << " %\r";
+  std::cout.flush();
+}

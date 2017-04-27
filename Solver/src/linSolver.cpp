@@ -183,7 +183,7 @@ void solveLinearSystem_LU (double *A, double *b, double *x, int N)
 	double soma;
 	k = pivot[0];
 	y[0] = b[k];
-	// Realizaar substituicoes progressivas para resolver o sistema triangular inferior: Ly = b
+	// Realizar substituicoes progressivas para resolver o sistema triangular inferior: Ly = b
 	for (i = 1; i < N; i++)
 	{
 		soma = 0;
@@ -202,6 +202,10 @@ void solveLinearSystem_LU (double *A, double *b, double *x, int N)
 		for (j = i+1; j < N; j++)
 			soma += A[i*N+j]*x[j];
 		x[i] = (y[i] - soma) / A[i*N+i];
+    //if (isnan(x[i]))
+    //{
+     // printf("Error\n");
+     // exit(1);
+    //}
 	}
-
 }

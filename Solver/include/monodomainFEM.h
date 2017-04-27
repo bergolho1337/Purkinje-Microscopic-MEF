@@ -6,7 +6,8 @@
 #include <math.h>
 #include <string.h>
 #include <vector>
-#include "../include/fitz.h"
+#include "../include/noble.h"
+//#include "../include/fitz.h"
 #include "../include/plot.h"
 #include "../include/linSolver.h"
 
@@ -16,12 +17,15 @@ using namespace std;
 //#define DEBUG 1                                       // Flag para debugacao e imprimir informacoes na tela (matrizes e vetores)
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-typedef double (*Func) (int elem, double t, double vm, double w);      
+#define LU                                    // Metodo resolvedor do sistema linear
+
+// Function pointer
+typedef double (*Func) (int point, double t, double vm, double m, double h, double n);     
 
 /* ============================== CONSTANTES ================================================== */
-const double BETA = 0.14;                     // Razao area superficial por volume (cm^-1)
-const double Cm = 1.0;                        // Capacitancia da membrana (uF/cm^2)
-const double SIGMA = 0.0004;                  // Condutividade citoplasmatica da celula (mS/cm)
+const double BETA = 0.14;                     // Razao area superficial por volume (cm^-1) (Bruno)
+const double Cm = 1.0;                        // Capacitancia da membrana (uF/cm^2) (Bruno)
+const double SIGMA = 0.001;                  // Condutividade citoplasmatica da celula (mS/cm) (default=0.001)
 /* ============================================================================================ */
 
 struct MonodomainFEM;
@@ -48,8 +52,12 @@ struct MonodomainFEM
   double *VNew;                               // Vetor com o valor do potencial transmembranico de cada ponto no tempo n
   double *VOld;                               // Vetor com o valor do potencial transmembranico de cada ponto no tempo n-1
   double *Vstar;                              // Vetor com o valor do potencial transmembranico de cada ponto no tempo intermediario *
-  double *wNew;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
-  double *wOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  double *mNew;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  double *mOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  double *hNew;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  double *hOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  double *nNew;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  double *nOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
   vector<Bifurcation> bif;                    // Vetor das bifurcacoes
 }typedef MonodomainFEM;
 
@@ -78,17 +86,19 @@ double* buildGlobalMatrixFromLocal (double *local_A, int *map, int np, int ne);
 double* buildGlobalMatrix (double *A, double *B, double dt, int np);
 void setBoundaryConditions (double *K, int np);
 void scaleFactor (double *V, double scale, int np);
-void setInitialConditionsModel (MonodomainFEM *monoFEM, double v0, double w0);
+void setInitialConditionsModel (MonodomainFEM *monoFEM);
 void calcPropagationVelocity (double *V, double t);
 void findBifurcation (MonodomainFEM *monoFEM);
 void kirchoffCondition_Matrix (MonodomainFEM *monoFEM);
 void kirchoffCondition_Vector (MonodomainFEM *monoFEM);
+void setVelocityPoints (double dx, int p1, int p2);
 
 void solveMonodomain (MonodomainFEM *monoFEM);
 void assembleLoadVector (MonodomainFEM *monoFEM);
 void solveEDO (MonodomainFEM *monoFEM, double t);
 
 void writeVTKFile (double *Vm, Point *points, int *map, int np, int ne, int k);
+void writeSolutionFile (FILE *solFile, double t, double vm, double m, double h, double n);
 void printError (char *msg);
 
 

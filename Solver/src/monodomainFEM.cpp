@@ -31,17 +31,24 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
       monoFEM->map[i*4+2] = left + monoFEM->nPoints;
       monoFEM->map[i*4+3] = right + monoFEM->nPoints;
     }
-    monoFEM->functions = buildFunctions();
     
-    // Alocar memoria e setar as condicoes iniciais (para o Fitz-Hugh Nagumo eh tudo 0)
+    // Alocar memoria e setar as condicoes iniciais
     // ** Lembrando que o elemento de Hermite possui 2*N o numero de pontos
     // Ou seja, o potencial Vm --> [0,N-1], I_L = [N,2N-1]
     monoFEM->VOld = (double*)calloc(monoFEM->nPoints*2,sizeof(double));
     monoFEM->Vstar = (double*)calloc(monoFEM->nPoints*2,sizeof(double));
     monoFEM->VNew = (double*)calloc(monoFEM->nPoints*2,sizeof(double));
-    monoFEM->wOld = (double*)calloc(monoFEM->nPoints,sizeof(double));
-    monoFEM->wNew = (double*)calloc(monoFEM->nPoints,sizeof(double));
+    monoFEM->mOld = (double*)calloc(monoFEM->nPoints,sizeof(double));
+    monoFEM->mNew = (double*)calloc(monoFEM->nPoints,sizeof(double));
+    monoFEM->hOld = (double*)calloc(monoFEM->nPoints,sizeof(double));
+    monoFEM->hNew = (double*)calloc(monoFEM->nPoints,sizeof(double));
+    monoFEM->nOld = (double*)calloc(monoFEM->nPoints,sizeof(double));
+    monoFEM->nNew = (double*)calloc(monoFEM->nPoints,sizeof(double));
     monoFEM->F = (double*)calloc(monoFEM->nPoints*2,sizeof(double));
+
+    // Atribuir as funcoes do modelo celular 
+    monoFEM->functions = buildFunctions();
+    setInitialConditionsModel(monoFEM); 
 
     // Construir a matriz global do sistema linear ligado a solucao da EDP
     assembleMatrix(monoFEM);
@@ -50,7 +57,12 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     kirchoffCondition_Matrix(monoFEM);
 
     // Decompor a matriz em LU
+    #ifdef LU
     LUDecomposition(monoFEM->K,monoFEM->nPoints*2);
+    #endif
+
+    // Atribuir pontos em que iremos calcular a velocidade
+    setVelocityPoints(monoFEM->dx,8,208);
 
     #ifdef DEBUG
     printInfoModel(monoFEM);
@@ -79,25 +91,32 @@ void printInfoModel (MonodomainFEM *monoFEM)
     printf("================================================================\n");
 }
 
-void setInitialConditionsModel (MonodomainFEM *monoFEM, double v0, double w0)
+// Atribuir as condicoes iniciais para todos os pontos da malha
+void setInitialConditionsModel (MonodomainFEM *monoFEM)
 {
   int i, np;
   np = monoFEM->nPoints;
   for (i = 0; i < np; i++)
   {
-    monoFEM->VOld[i] = v0;
-    monoFEM->wOld[i] = w0;
+    monoFEM->VOld[i] = v0__Nob;
+    monoFEM->mOld[i] = m0__Nob;
+    monoFEM->hOld[i] = h0__Nob;
+    monoFEM->nOld[i] = n0__Nob;
   }
 }
 
 // Constroi o vetor de funcoes que serao utilizados no programa
 // 0 = Funcao do potencial transmembranico (Vm)
-// 1 = Funcao da variavel de estado (w)
+// 1 = Funcao da variavel de estado (m)
+// 2 = Funcao da variavel de estado (h)
+// 3 = Funcao da variavel de estado (n)
 Func* buildFunctions ()
 {
   Func *func = (Func*)malloc(sizeof(Func)*num_eq);
-  func[0] = dvdt__Fitz;
-  func[1] = dwdt__Fitz;
+  func[0] = dvdt__Nob;
+  func[1] = dmdt__Nob;
+  func[2] = dhdt__Nob;
+  func[3] = dndt__Nob;
   return func;
 }
 
@@ -286,21 +305,18 @@ void solveEDO (MonodomainFEM *monoFEM, double t)
   // Resolver o sistema de EDO para cada ponto (Potencial e as variaveis de estado)
   for (point = 0; point < np; point++)
   {
-    for (i = 0; i < num_eq; i++)
-    {
-      // V^{n+1} = V^{*} + f*dt
-      if (i == 0)
-      {
-        f = monoFEM->functions[i](point,t,monoFEM->Vstar[point],monoFEM->wOld[point]);
-        monoFEM->VNew[point] = monoFEM->Vstar[point] + f*dt;
-      }
-      // w^{n+1} = w^{n} + f*dt
-      else
-      {
-        f = monoFEM->functions[i](point,t,monoFEM->VOld[point],monoFEM->wOld[point]);
-        monoFEM->wNew[point] = monoFEM->wOld[point] + f*dt;
-      }     
-    }
+    // V^{n+1} = V^{*} + f*dt
+    f = monoFEM->functions[0](point,t,monoFEM->Vstar[point],monoFEM->mOld[point],monoFEM->hOld[point],monoFEM->nOld[point]);
+    monoFEM->VNew[point] = monoFEM->Vstar[point] + f*dt;
+    // m^{n+1} = m^{n} + f*dt
+    f = monoFEM->functions[1](point,t,monoFEM->VOld[point],monoFEM->mOld[point],monoFEM->hOld[point],monoFEM->nOld[point]);
+    monoFEM->mNew[point] = monoFEM->mOld[point] + f*dt;   
+    // h^{n+1} = h^{n} + f*dt
+    f = monoFEM->functions[2](point,t,monoFEM->VOld[point],monoFEM->mOld[point],monoFEM->hOld[point],monoFEM->nOld[point]);
+    monoFEM->hNew[point] = monoFEM->hOld[point] + f*dt;
+    // n^{n+1} = n^{n} + f*dt
+    f = monoFEM->functions[3](point,t,monoFEM->VOld[point],monoFEM->mOld[point],monoFEM->hOld[point],monoFEM->nOld[point]);
+    monoFEM->nNew[point] = monoFEM->nOld[point] + f*dt;
   }
   // Resolve agora para a corrente i_L^(n-1) = i_L^(n)  
   for (point = np; point < 2*np; point++)
@@ -312,9 +328,11 @@ void solveEDO (MonodomainFEM *monoFEM, double t)
 // Resolve a equacao do monodominio
 void solveMonodomain (MonodomainFEM *monoFEM)
 {
+  FILE *solFile = fopen("solution.dat","w+");
   double t;
   // A matriz global do problema jah se encontra como LU
-  printf("[!] Resolvendo o problema transiente ... ");
+  printf("[!] Resolvendo o problema transiente ... \n");
+  printf("[!] Progress\n");
   fflush(stdout);
   int i, M;
   M = monoFEM->M;
@@ -323,14 +341,26 @@ void solveMonodomain (MonodomainFEM *monoFEM)
   {
     t = i*monoFEM->dt;
 
+    // Imprime o progresso da solucao
+    printProgress2(i,M);
+
     // Escrever em arquivo .vtk
-    writeVTKFile(monoFEM->VOld,monoFEM->points,monoFEM->map,monoFEM->nPoints,monoFEM->nElem,i);
+    if (i % 10 == 0)
+    {
+      writeVTKFile(monoFEM->VOld,monoFEM->points,monoFEM->map,monoFEM->nPoints,monoFEM->nElem,i);
+      writeSolutionFile(solFile,t,monoFEM->VOld[0],monoFEM->mOld[0],monoFEM->hOld[0],monoFEM->nOld[0]);
+    }
 
     // Resolver a EDP (parte difusiva)
     assembleLoadVector(monoFEM);
     kirchoffCondition_Vector(monoFEM);
+
+    #ifdef LU
+    //printf("k = %d\n",i);
     solveLinearSystem_LU(monoFEM->K,monoFEM->F,monoFEM->Vstar,monoFEM->nPoints*2);
-    //solveLinearSystem_CG(monoFEM->K,monoFEM->F,monoFEM->Vstar,monoFEM->nPoints*2);
+    #else
+    solveLinearSystem_CG(monoFEM->K,monoFEM->F,monoFEM->Vstar,monoFEM->nPoints*2);
+    #endif
 
     // Multiplicar os termos da derivada pelo fator de escala
     scaleFactor(monoFEM->Vstar,SIGMA/monoFEM->dx,monoFEM->nPoints);
@@ -347,9 +377,12 @@ void solveMonodomain (MonodomainFEM *monoFEM)
 
     // Passa para a proxima iteracao
     memcpy(monoFEM->VOld,monoFEM->VNew,sizeof(double)*monoFEM->nPoints*2);
-    memcpy(monoFEM->wOld,monoFEM->wNew,sizeof(double)*monoFEM->nPoints);
-  } 
-  //printf("ok\n");
+    memcpy(monoFEM->mOld,monoFEM->mNew,sizeof(double)*monoFEM->nPoints);
+    memcpy(monoFEM->hOld,monoFEM->hNew,sizeof(double)*monoFEM->nPoints);
+    memcpy(monoFEM->nOld,monoFEM->nNew,sizeof(double)*monoFEM->nPoints);
+  }
+  fclose(solFile); 
+  printf("ok\n");
 }
 
 // Calcula a velocidade de propagacao entre dois pontos
@@ -358,20 +391,20 @@ void calcPropagationVelocity (double *V, double t)
   if (stage1)
   {
     // Potencial do ponto 1 chegou no ponto minimo ?
-    if (V[id_1] < -1.90)
+    if (V[id_1] < -80.0)
     {
       t1 = t;
       stage2 = true;
       stage1 = false;
       printf("\n\n[!] Propagation velocity! Stage 1 clear!\n");
-      printf("t1 = %e\n",t1);
-      printf("V[%d] = %e\n",id_1,V[id_1]);
+      printf("t1 = %.10lf\n",t1);
+      printf("V[%d] = %.10lf\n",id_1,V[id_1]);
     }
   }
   else if (stage2)
   {
     // Potencial do ponto 2 chegou no ponto minimo ?
-    if (V[id_2] < -1.90)
+    if (V[id_2] < -80.0)
     {
       double velocity;
       t2 = t;
@@ -379,9 +412,11 @@ void calcPropagationVelocity (double *V, double t)
       // Calcula velocidade: v = dx/dt
       velocity = delta_x / (t2-t1);
       printf("\n[!] Propagation velocity! Stage 2 clear!\n");
-      printf("t2 = %e\n",t2);
-      printf("V[%d] = %e\n",id_2,V[id_2]);
-      printf("\n!!!!!!!! Propagation velocity = %e cm/s !!!!!!!!!!\n",velocity);
+      printf("t2 = %.10lf\n",t2);
+      printf("V[%d] = %.10lf\n",id_2,V[id_2]);
+      printf("delta_x = %.10lf\n",delta_x);
+      printf("delta_t = %.10lf\n",t2-t1);
+      printf("\n!!!!!!!! Propagation velocity = %lf cm/s !!!!!!!!!!\n",velocity*1000.0);
     }
   }
 }
@@ -442,7 +477,7 @@ void kirchoffCondition_Vector (MonodomainFEM *monoFEM)
   for (int i = 0; i < (int)monoFEM->bif.size(); i++)
   {
     int lin = monoFEM->bif[i].id + monoFEM->nPoints;
-    monoFEM->F[lin] = 0;
+    monoFEM->F[lin] = 1.0e-30;
   }
 }
 
@@ -460,8 +495,12 @@ void freeMonodomain (MonodomainFEM *monoFEM)
   free(monoFEM->VNew);
   free(monoFEM->VOld);
   free(monoFEM->Vstar);
-  free(monoFEM->wOld);
-  free(monoFEM->wNew);
+  free(monoFEM->mOld);
+  free(monoFEM->mNew);
+  free(monoFEM->hOld);
+  free(monoFEM->hNew);
+  free(monoFEM->nOld);
+  free(monoFEM->nNew);
   free(monoFEM);
   printf("ok\n");
 }
@@ -520,9 +559,22 @@ void writeVTKFile (double *Vm, Point *points, int *map, int np, int ne, int k)
   fclose(file);
 }
 
+void writeSolutionFile (FILE *solFile, double t, double vm, double m, double h, double n)
+{
+  fprintf(solFile,"%.10lf %.10lf %.10lf %.10lf %.10lf\n",t,vm,m,h,n);
+}
+
 // Imprime uma mensagem de erro e sai do programa
 void printError (char *msg)
 {
   printf("[-] ERROR ! %s\n",msg);
   exit(1);
+}
+
+void setVelocityPoints (double dx, int p1, int p2)
+{
+  id_1 = p1;
+  id_2 = p2;
+  // TO DO: Calcular o dx usando uma estrutura de grafo
+  delta_x = (id_2 - id_1)*dx;
 }
