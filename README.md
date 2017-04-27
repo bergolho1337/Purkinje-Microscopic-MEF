@@ -34,7 +34,7 @@ $ ./purkinjeMiocardiumMEF <xMax> <nElem> <VTK_file>
   - Considera conservação de corrente de acordo com a Lei de Kirchoff nas bifurcações.
   - A EDP associada do problema é resolvida usando decomposição LU com pivoteamento. A cada passo de tempo se faz retro+pos substituições.
   - A sistema não linear de EDOs associado é resolvido usando Euler Explícito.
-  - Atualmente está versão só possui o modelo celular de Fitz-Hugh-Nagumo.
+  - Atualmente está versão está configurada para o modelo celular de Noble.
   - Para usar basta passar como argumento para o programa o passo de tempo 'dt', o período máximo da simulação 't_max' e o arquivo da malha gerado a partir do Mesh_Generator. 
   - Solução fica armazena na pasta VTK contendo os valores do potencial transmembrânico e da corrente de todos os miócitos.
   - Para visualizar a simulação abrir os arquivos da pasta VTK no Paraview.
