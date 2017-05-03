@@ -20,9 +20,6 @@ const int num_eq = 4;
 // Stimulus current
 const double v_stim__Nob = 1000.0;  
 
-// Cycle length
-const double cycle_length = 250.0;
-
 // Initial conditions
 const double v0__Nob = -75.5344986658;
 const double m0__Nob = 0.0605467272;
@@ -73,5 +70,6 @@ double dndt__Nob (int point, double t, double vm, double m, double h, double n);
 
 void setInitialConditions__Nob (double *y, int num_eq);
 void setFunctions__Nob (Func *f, int num_eq);
+void setCycleLength (double bcl);
 
 #endif

@@ -54,6 +54,9 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     // Atribuir as funcoes do modelo celular 
     monoFEM->functions = buildFunctions();
 
+    // Atribuir o ciclo basico de pacing
+    setCycleLength(atof(argv[5]));
+
     // Atribuir as condicoes iniciais
     setInitialConditionsModel_FromFile(monoFEM,argv[4]); 
 

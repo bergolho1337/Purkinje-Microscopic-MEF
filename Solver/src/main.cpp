@@ -27,17 +27,18 @@ int main (int argc, char *argv[])
   printf("!!!!             Utilizando elementos de Hermite               !!!!\n");
   printf("-----------------------------------------------------------------------------------------------\n");
   */
-  if (argc-1 < 4)
+  if (argc-1 < 5)
   {
-    printf("Usage:> %s <dt> <t_max> <mesh_file> <steady_state_file>\n",argv[0]);
+    printf("Usage:> %s <dt> <t_max> <mesh_file> <steady_state_file> <BCL>\n",argv[0]);
     printf("---------------------------------------------------------------------------------------------\n");
     printf("<dt> = Tamanho da discretizacao no tempo\n");
     printf("<t_max> = Tempo maximo de simulacao\n");
     printf("<mesh_file> = Arquivo contendo a malha com os elementos e os pontos definidos\n");
     printf("<steady_state_file> = Arquivo contendo a solucao do estado estacionario dos pontos da malha\n");
+    printf("<BCL> = Ciclo basico do pacing\n");
     printf("[!] DEBUGACAO EH ATIVADA POR FLAG NO ARQUIVO \"monodomainFEM.h\".\n");
     printf("---------------------------------------------------------------------------------------------\n");
-    printf("Exemplo: ./purkinjeFEM 0.1 1000 Malhas/test1.msh SteadyStates/steadystate1.dat\n");
+    printf("Exemplo: ./purkinjeFEM 0.1 1000 Malhas/test1.msh SteadyStates/steadystate1.dat 500\n");
     printf("=============================================================================================\n");
     return 1;
   }

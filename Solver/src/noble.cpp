@@ -1,5 +1,8 @@
 #include "../include/noble.h"
 
+// Cycle length
+double cycle_length;
+
 void setInitialConditions__Nob (double *y, int num_eq)
 {
     y[0] = v0__Nob;
@@ -14,6 +17,11 @@ void setFunctions__Nob (Func *f, int num_eq)
     f[1] = dmdt__Nob;
     f[2] = dhdt__Nob;
     f[3] = dndt__Nob;
+}
+
+void setCycleLength (double bcl)
+{
+    cycle_length = bcl;
 }
 
 double I_Stim__Nob (int point, double t)
