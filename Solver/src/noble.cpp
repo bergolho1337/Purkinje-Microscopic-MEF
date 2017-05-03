@@ -19,7 +19,7 @@ void setFunctions__Nob (Func *f, int num_eq)
 double I_Stim__Nob (int point, double t)
 {
     // Somente os 2 primeiros pontos ficam como celulas de estimulo
-    if (point <= 5)
+    if (point <= 2)
     {
         double min_time, max_time;
         for (int k = 0; k < 20; k++)

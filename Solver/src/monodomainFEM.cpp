@@ -1,5 +1,6 @@
 #include "../include/monodomainFEM.h"
 
+FILE *velocityFile;
 bool stage1 = true;
 bool stage2 = false;
 int id_1, id_2;
@@ -45,10 +46,16 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     monoFEM->nOld = (double*)calloc(monoFEM->nPoints,sizeof(double));
     monoFEM->nNew = (double*)calloc(monoFEM->nPoints,sizeof(double));
     monoFEM->F = (double*)calloc(monoFEM->nPoints*2,sizeof(double));
+    monoFEM->dvdt = (Derivative*)malloc(monoFEM->nPoints*sizeof(Derivative));
+    for (int i = 0; i < monoFEM->nPoints; i++)
+      monoFEM->dvdt[i].value = 0;
+    
 
     // Atribuir as funcoes do modelo celular 
     monoFEM->functions = buildFunctions();
-    setInitialConditionsModel(monoFEM); 
+
+    // Atribuir as condicoes iniciais
+    setInitialConditionsModel_FromFile(monoFEM,argv[4]); 
 
     // Construir a matriz global do sistema linear ligado a solucao da EDP
     assembleMatrix(monoFEM);
@@ -62,7 +69,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     #endif
 
     // Atribuir pontos em que iremos calcular a velocidade
-    setVelocityPoints(monoFEM->dx,8,208);
+    setVelocityPoints(monoFEM->dx,8,78);
 
     #ifdef DEBUG
     printInfoModel(monoFEM);
@@ -103,6 +110,24 @@ void setInitialConditionsModel (MonodomainFEM *monoFEM)
     monoFEM->hOld[i] = h0__Nob;
     monoFEM->nOld[i] = n0__Nob;
   }
+}
+
+void setInitialConditionsModel_FromFile (MonodomainFEM *monoFEM, char *filename)
+{
+  FILE *steadyFile = fopen(filename,"r");
+  int i, np;
+  double v, m, h, n;
+
+  np = monoFEM->nPoints;
+  for (i = 0; i < np; i++)
+  {
+    if (!fscanf(steadyFile,"%lf %lf %lf %lf",&v,&m,&h,&n)) printError("Reading file!");
+    monoFEM->VOld[i] = v;
+    monoFEM->mOld[i] = m;
+    monoFEM->hOld[i] = h;
+    monoFEM->nOld[i] = n;
+  }
+  fclose(steadyFile);
 }
 
 // Constroi o vetor de funcoes que serao utilizados no programa
@@ -298,7 +323,7 @@ void assembleLoadVector (MonodomainFEM *monoFEM)
 void solveEDO (MonodomainFEM *monoFEM, double t)
 {
   int np;
-  int i, point;
+  int point;
   double f, dt;
   np = monoFEM->nPoints;
   dt = monoFEM->dt;
@@ -328,7 +353,6 @@ void solveEDO (MonodomainFEM *monoFEM, double t)
 // Resolve a equacao do monodominio
 void solveMonodomain (MonodomainFEM *monoFEM)
 {
-  FILE *solFile = fopen("solution.dat","w+");
   double t;
   // A matriz global do problema jah se encontra como LU
   printf("[!] Resolvendo o problema transiente ... \n");
@@ -344,31 +368,28 @@ void solveMonodomain (MonodomainFEM *monoFEM)
     // Imprime o progresso da solucao
     printProgress2(i,M);
 
-    // Escrever em arquivo .vtk
+    // Escrever a solucao em arquivo .vtk
     if (i % 10 == 0)
-    {
       writeVTKFile(monoFEM->VOld,monoFEM->points,monoFEM->map,monoFEM->nPoints,monoFEM->nElem,i);
-      writeSolutionFile(solFile,t,monoFEM->VOld[0],monoFEM->mOld[0],monoFEM->hOld[0],monoFEM->nOld[0]);
-    }
 
     // Resolver a EDP (parte difusiva)
     assembleLoadVector(monoFEM);
     kirchoffCondition_Vector(monoFEM);
 
-    #ifdef LU
-    //printf("k = %d\n",i);
+    // Resolve o sistema linear
     solveLinearSystem_LU(monoFEM->K,monoFEM->F,monoFEM->Vstar,monoFEM->nPoints*2);
-    #else
-    solveLinearSystem_CG(monoFEM->K,monoFEM->F,monoFEM->Vstar,monoFEM->nPoints*2);
-    #endif
-
+    
     // Multiplicar os termos da derivada pelo fator de escala
     scaleFactor(monoFEM->Vstar,SIGMA/monoFEM->dx,monoFEM->nPoints);
 
     // Resolver as EDOs (parte reativa)
     solveEDO(monoFEM,t);
 
-    calcPropagationVelocity(monoFEM->VNew,t);
+    // Calcular a velocidade de propagacao
+    //calcPropagationVelocity(monoFEM->dvdt,t);
+
+    // Calcular o valor da derivada maxima de cada ponto
+    calcMaximumDerivative(monoFEM->dvdt,monoFEM->nPoints,t,monoFEM->VOld,monoFEM->VNew);
 
     #ifdef DEBUG
     printVector("Vstar",monoFEM->Vstar,monoFEM->nPoints*2);
@@ -381,42 +402,47 @@ void solveMonodomain (MonodomainFEM *monoFEM)
     memcpy(monoFEM->hOld,monoFEM->hNew,sizeof(double)*monoFEM->nPoints);
     memcpy(monoFEM->nOld,monoFEM->nNew,sizeof(double)*monoFEM->nPoints);
   }
-  fclose(solFile); 
+  // Escrever em arquivo os valores das derivadas maximas de cada ponto
+  writeMaximumDerivative(monoFEM->dvdt,monoFEM->nPoints);
+  // Calcular a velocidade de propagacao nos pontos pre-definidos
+  calcVelocity(monoFEM->dvdt);
+
   printf("ok\n");
 }
 
 // Calcula a velocidade de propagacao entre dois pontos
-void calcPropagationVelocity (double *V, double t)
+void calcPropagationVelocity (Derivative *dvdt, double t)
 {
   if (stage1)
   {
-    // Potencial do ponto 1 chegou no ponto minimo ?
-    if (V[id_1] < -80.0)
+    // Potencial do ponto 1 chegou no ponto de derivada maxima ?
+    if (dvdt[id_1].value > 10.0 && t > 100.0)
     {
       t1 = t;
       stage2 = true;
       stage1 = false;
-      printf("\n\n[!] Propagation velocity! Stage 1 clear!\n");
-      printf("t1 = %.10lf\n",t1);
-      printf("V[%d] = %.10lf\n",id_1,V[id_1]);
+      fprintf(velocityFile,"\n\n[!] Propagation velocity! Stage 1 clear!\n");
+      fprintf(velocityFile,"t1 = %.10lf\n",t1);
+      fprintf(velocityFile,"dvdt[%d] = %.10lf\n",id_1,dvdt[id_1].value);
     }
   }
   else if (stage2)
   {
-    // Potencial do ponto 2 chegou no ponto minimo ?
-    if (V[id_2] < -80.0)
+    // Potencial do ponto 2 chegou ao ponto de derivada maxima ?
+    if (dvdt[id_2].value > 10.0 && t > 100.0)
     {
       double velocity;
       t2 = t;
       stage2 = false;
       // Calcula velocidade: v = dx/dt
       velocity = delta_x / (t2-t1);
-      printf("\n[!] Propagation velocity! Stage 2 clear!\n");
-      printf("t2 = %.10lf\n",t2);
-      printf("V[%d] = %.10lf\n",id_2,V[id_2]);
-      printf("delta_x = %.10lf\n",delta_x);
-      printf("delta_t = %.10lf\n",t2-t1);
-      printf("\n!!!!!!!! Propagation velocity = %lf cm/s !!!!!!!!!!\n",velocity*1000.0);
+      fprintf(velocityFile,"\n[!] Propagation velocity! Stage 2 clear!\n");
+      fprintf(velocityFile,"t2 = %.10lf\n",t2);
+      fprintf(velocityFile,"dvdt[%d] = %.10lf\n",id_2,dvdt[id_2].value);
+      fprintf(velocityFile,"delta_x = %.10lf\n",delta_x);
+      fprintf(velocityFile,"delta_t = %.10lf\n",t2-t1);
+      fprintf(velocityFile,"\n!!!!!!!! Propagation velocity = %lf cm/s !!!!!!!!!!\n",velocity*1000.0);
+      fclose(velocityFile);
     }
   }
 }
@@ -501,6 +527,7 @@ void freeMonodomain (MonodomainFEM *monoFEM)
   free(monoFEM->hNew);
   free(monoFEM->nOld);
   free(monoFEM->nNew);
+  free(monoFEM->dvdt);
   free(monoFEM);
   printf("ok\n");
 }
@@ -559,9 +586,11 @@ void writeVTKFile (double *Vm, Point *points, int *map, int np, int ne, int k)
   fclose(file);
 }
 
-void writeSolutionFile (FILE *solFile, double t, double vm, double m, double h, double n)
+// Escreve a solucao estacionaria de todas as celulas em um arquivo
+void writeSteadyStateFile (FILE *steadyFile, int nPoints, double vm[], double m[], double h[], double n[])
 {
-  fprintf(solFile,"%.10lf %.10lf %.10lf %.10lf %.10lf\n",t,vm,m,h,n);
+  for (int i = 0; i < nPoints; i++)
+    fprintf(steadyFile,"%.10lf %.10lf %.10lf %.10lf\n",vm[i],m[i],h[i],n[i]);
 }
 
 // Imprime uma mensagem de erro e sai do programa
@@ -573,8 +602,50 @@ void printError (char *msg)
 
 void setVelocityPoints (double dx, int p1, int p2)
 {
+  // Abrir o arquivo que armazena informacoes da velocidade de propagacao
+  velocityFile = fopen("velocity.txt","w+");
+  // Atribui os identificadores dos pontos que serao medidos
   id_1 = p1;
   id_2 = p2;
-  // TO DO: Calcular o dx usando uma estrutura de grafo
+  // TO DO: Fazer para varios pontos de medicao
   delta_x = (id_2 - id_1)*dx;
+}
+
+// Calcula o maior valor das derivadas
+void calcMaximumDerivative (Derivative *dvdt, int nPoints, double t, double *vold, double *vnew)
+{
+  for (int i = 0; i < nPoints; i++)
+  {
+    // Considerar apos o primeiro estimulo
+    if (vnew[i] - vold[i] > dvdt[i].value && t > 250.0)
+    {
+      dvdt[i].value = vnew[i] - vold[i];
+      dvdt[i].t = t;
+    }
+  }
+}
+
+// Escrever em arquivo o valor da derivada maxima de cada ponto da malha
+void writeMaximumDerivative (Derivative *dvdt, int nPoints)
+{
+  FILE *dvdtFile = fopen("max-dvdt.dat","w+");
+  for (int i = 0; i < nPoints; i++)
+    fprintf(dvdtFile,"Point %d --> || t = %.10lf || max_dvdt = %.10lf ||\n",i,dvdt[i].t,dvdt[i].value);
+  fclose(dvdtFile);
+}
+
+void calcVelocity (Derivative *dvdt)
+{
+  double t = dvdt[id_2].t - dvdt[id_1].t;
+  // Calcula velocidade: v = dx/dt
+  double velocity = delta_x / t;
+  fprintf(velocityFile,"\n\n[!] Propagation velocity!\n");
+  fprintf(velocityFile,"t1 = %.10lf\n",dvdt[id_1].t);
+  fprintf(velocityFile,"dvdt[%d] = %.10lf\n\n",id_1,dvdt[id_1].value);
+  fprintf(velocityFile,"t2 = %.10lf\n",dvdt[id_2].t);
+  fprintf(velocityFile,"dvdt[%d] = %.10lf\n",id_2,dvdt[id_2].value);
+  fprintf(velocityFile,"delta_x = %.10lf\n",delta_x);
+  fprintf(velocityFile,"delta_t = %.10lf\n",t);
+  fprintf(velocityFile,"\n!!!!!!!! Propagation velocity = %lf cm/s !!!!!!!!!!\n",velocity*1000.0);
+  fclose(velocityFile);  
 }

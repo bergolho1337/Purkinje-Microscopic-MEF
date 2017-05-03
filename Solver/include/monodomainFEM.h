@@ -18,6 +18,7 @@ using namespace std;
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 #define LU                                    // Metodo resolvedor do sistema linear
+#define STEADYSTATE                           // Simulacao para capturar o estado estacionario da configuracao
 
 // Function pointer
 typedef double (*Func) (int point, double t, double vm, double m, double h, double n);     
@@ -25,12 +26,13 @@ typedef double (*Func) (int point, double t, double vm, double m, double h, doub
 /* ============================== CONSTANTES ================================================== */
 const double BETA = 0.14;                     // Razao area superficial por volume (cm^-1) (Bruno)
 const double Cm = 1.0;                        // Capacitancia da membrana (uF/cm^2) (Bruno)
-const double SIGMA = 0.001;                  // Condutividade citoplasmatica da celula (mS/cm) (default=0.001)
+const double SIGMA = 0.004;                  // Condutividade citoplasmatica da celula (mS/cm) (default=0.004)
 /* ============================================================================================ */
 
 struct MonodomainFEM;
 struct Point;
 struct Bifurcation;
+struct Derivative;
 
 // Estrutura do resolvedor da equacao do Monodominio
 struct MonodomainFEM
@@ -58,6 +60,7 @@ struct MonodomainFEM
   double *hOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
   double *nNew;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
   double *nOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
+  Derivative *dvdt;                           // Vetor das derivadas maximas de cada ponto da malha
   vector<Bifurcation> bif;                    // Vetor das bifurcacoes
 }typedef MonodomainFEM;
 
@@ -74,6 +77,13 @@ struct Bifurcation
   vector<int> links;                          // Vetor com os indices dos Node que estao ligados
 }typedef Bifurcation;
 
+// Estrutura do calculo da derivada maxima
+struct Derivative
+{
+  double t;                                   // Tempo em que a derivada aconteceu
+  double value;                               // Valor da derivada
+}typedef Derivative;
+
 /* ================================= FUNCTIONS ======================================================= */
 MonodomainFEM* newMonodomainFEM (int argc, char *argv[]);
 void freeMonodomain (MonodomainFEM *monoFEM);
@@ -87,18 +97,23 @@ double* buildGlobalMatrix (double *A, double *B, double dt, int np);
 void setBoundaryConditions (double *K, int np);
 void scaleFactor (double *V, double scale, int np);
 void setInitialConditionsModel (MonodomainFEM *monoFEM);
-void calcPropagationVelocity (double *V, double t);
+void setInitialConditionsModel_FromFile (MonodomainFEM *monoFEM, char *filename);
+void calcPropagationVelocity (Derivative *dvdt, double t);
 void findBifurcation (MonodomainFEM *monoFEM);
 void kirchoffCondition_Matrix (MonodomainFEM *monoFEM);
 void kirchoffCondition_Vector (MonodomainFEM *monoFEM);
 void setVelocityPoints (double dx, int p1, int p2);
 
+void calcMaximumDerivative (Derivative *dvdt, int nPoints, double t, double *vold, double *vnew);
+void calcVelocity (Derivative *dvdt);
+
 void solveMonodomain (MonodomainFEM *monoFEM);
 void assembleLoadVector (MonodomainFEM *monoFEM);
 void solveEDO (MonodomainFEM *monoFEM, double t);
 
+void writeMaximumDerivative (Derivative *dvdt, int nPoints);
 void writeVTKFile (double *Vm, Point *points, int *map, int np, int ne, int k);
-void writeSolutionFile (FILE *solFile, double t, double vm, double m, double h, double n);
+void writeSteadyStateFile (FILE *steadyFile, int nPoints, double vm[], double m[], double h[], double n[]);
 void printError (char *msg);
 
 

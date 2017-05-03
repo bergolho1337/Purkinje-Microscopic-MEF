@@ -2,6 +2,7 @@
 
 PROGRAM_NAME="purkinjeFEM"
 ARGS="0.1 1000"
+NELEM="50"
 C_TEST=1
 MAX_TEST=10
 
@@ -26,9 +27,10 @@ fi
 echo "-----------------------------------------------------------------------------------------------------"
 while [ $C_TEST -le $MAX_TEST ]; do
     echo "------ Simulation $C_TEST ---------"
-    ./$PROGRAM_NAME $ARGS Malhas/NElem_300/test$C_TEST.msh
+    ./$PROGRAM_NAME $ARGS Malhas/NElem_$NELEM/test$C_TEST.msh SteadyState/steadystate$C_TEST.dat
     # Copy the results in folder VTK to correct one in the Results folder
     cp -r VTK Resultados/
+    cp ./velocity.txt Resultados/VTK/velocity$C_TEST.txt
     # Rename it to the appropriate mesh name
     mv Resultados/VTK Resultados/Mesh_$C_TEST     
     let C_TEST=C_TEST+1

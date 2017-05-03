@@ -21,7 +21,7 @@ const int num_eq = 4;
 const double v_stim__Nob = 1000.0;  
 
 // Cycle length
-const double cycle_length = 500.0;
+const double cycle_length = 250.0;
 
 // Initial conditions
 const double v0__Nob = -75.5344986658;
