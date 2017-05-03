@@ -1,9 +1,10 @@
 # Purkinje-Microscopic-MEF
 
-Resolve a equação do monodomínio utilizando o Método dos Elementos Finitos usando Elementos de Hermite. O projeto está dividido em 3 partes.
+Resolve a equação do monodomínio utilizando o Método dos Elementos Finitos usando Elementos de Hermite. O projeto está dividido em 4 partes.
 
   - Skeleton_Mesh
   - Mesh_Generator
+  - SteadyStateCalculator
   - Solver
 
 # Skeleton_Mesh
@@ -25,7 +26,24 @@ $ ./skeletonMesh <xMax> <num_bif> <out_VTK_file>
 
 ```sh
 $ make
-$ ./purkinjeMiocardiumMEF <xMax> <nElem> <VTK_file>
+$ ./meshGenerator <xMax> <nElem> <in_VTK_file> <out_MSH_file>
+```
+
+# SteadyStateCalculator
+
+  - Constrói um arquivo contendo a solução estacionária para uma determinada malha gerada a partir do Mesh_Generator.
+  - O uso é feito a partir da passagem do intervalo de discretização no tempo, dt, o tempo máximo de simulação, o arquivo .msh da malha, um identificador da malha e o ciclo básico de estímulo.
+
+```sh
+$ make
+$ ./steadyState <dt> <t_max> <mesh_file> <mesh_id> <BCL>
+```
+
+  - Existe também um script chamado 'runSimulation.sh' que calcula o estado estacionário das malhas contidas no diretório /Malhas.
+  - Os resultados são gravados na pasta SteadyState.
+
+```sh
+$ ./runSimulation.sh
 ```
 
 # Solver
@@ -35,11 +53,18 @@ $ ./purkinjeMiocardiumMEF <xMax> <nElem> <VTK_file>
   - A EDP associada do problema é resolvida usando decomposição LU com pivoteamento. A cada passo de tempo se faz retro+pos substituições.
   - A sistema não linear de EDOs associado é resolvido usando Euler Explícito.
   - Atualmente está versão está configurada para o modelo celular de Noble.
-  - Para usar basta passar como argumento para o programa o passo de tempo 'dt', o período máximo da simulação 't_max' e o arquivo da malha gerado a partir do Mesh_Generator. 
+  - Para usar basta passar como argumento para o programa o passo de tempo 'dt', o período máximo da simulação 't_max', o arquivo da malha gerado a partir do Mesh_Generator e o arquivo contendo a solução estacionária vinda do StadyStateCalculator. 
   - Solução fica armazena na pasta VTK contendo os valores do potencial transmembrânico e da corrente de todos os miócitos.
   - Para visualizar a simulação abrir os arquivos da pasta VTK no Paraview.
 
 ```sh
 $ make
-$ ./purkinjeFEM <dt> <t_max> <mesh_file>
+$ ./purkinjeFEM <dt> <t_max> <mesh_file> <steady_state_file>
+```
+
+  - Pode-se executar o script 'runSimulation.sh' para já calcular a solução de um intervalo de malhas contidos no diretório /Malhas.
+  - Os resultados ficam armazenados na pasta /Resultados.
+
+```sh
+$ ./runSimulation.sh
 ```

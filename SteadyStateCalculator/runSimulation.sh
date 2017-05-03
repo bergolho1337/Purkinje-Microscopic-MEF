@@ -1,17 +1,22 @@
+# ==========================================================================================================
+# Script para execucao automatica do SteadyState de um conjunto de malhas.
+# ==========================================================================================================
+
 #!/bin/bash
 
 # Constants
-PROGRAM_NAME="purkinjeFEM"
-ARGS="0.1 5000"
-BCL=250
-NELEM=50
+PROGRAM_NAME="steadyState"                  # Nome do programa
+ARGS="0.1 5000"                             # Argumentos do programa
+BCL=250                                     # Basic cycle length = Ciclo basico do pacing
+NELEM=50                                    # Numero de elementos a ser utilizado
 
-C_MESH=1
-C_BCL=1
+# Variables
+C_MESH=1                                    # Contador da malha a ser resolvida
+C_BCL=1                                     # Contador do BCL a ser executado
 
-MAX_NELEM=50
-MAX_BCL=250
-MAX_MESH=10
+MAX_NELEM=100                                # Numero maximo de elementos que serao testados
+MAX_BCL=500                                 # Numero maximo de BCL que serao testados
+MAX_MESH=10                                 # Numero maximo de malhas que serao testados
 
 
 echo "======= RUNNING STEADY STATE SIMULATION ======="
@@ -56,4 +61,6 @@ while [ $NELEM -le $MAX_NELEM ]; do
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 done
 echo "-----------------------------------------------------------------------------------------------------"
+
+
 exit 0    

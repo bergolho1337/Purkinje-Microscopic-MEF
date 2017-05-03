@@ -7,7 +7,7 @@ CC_SOURCES = $(wildcard src/*)
 STRING_OBJ_AUX = $(CC_SOURCES:.cpp=.o)
 STRING_OBJ = $(subst src/,,$(STRING_OBJ_AUX))
 CC_OBJ = $(patsubst %,$(OBJECT_DIR)/%,$(STRING_OBJ))
-PROGRAM_NAME = purkinjeFEM
+PROGRAM_NAME = steadyState
 
 all: $(PROGRAM_NAME)
 
