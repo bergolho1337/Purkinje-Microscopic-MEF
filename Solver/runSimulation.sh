@@ -6,8 +6,9 @@
 PROGRAM_NAME="purkinjeFEM"
 ARGS="0.1 1000"
 NELEM="50"
+BCL="500"
 C_TEST=1
-MAX_TEST=10
+MAX_TEST=5
 
 echo "======= RUNNING BIFURCATION SIMULATION ======="
 
@@ -30,7 +31,7 @@ fi
 echo "-----------------------------------------------------------------------------------------------------"
 while [ $C_TEST -le $MAX_TEST ]; do
     echo "------ Simulation $C_TEST ---------"
-    ./$PROGRAM_NAME $ARGS Malhas/NElem_$NELEM/test$C_TEST.msh SteadyState/steadystate$C_TEST.dat
+    ./$PROGRAM_NAME $ARGS Malhas/NElem_$NELEM/test$C_TEST.msh SteadyState/steadystate$C_TEST.dat $BCL
     # Copy the results in folder VTK to correct one in the Results folder
     cp -r VTK Resultados/
     cp ./velocity.txt Resultados/VTK/velocity$C_TEST.txt

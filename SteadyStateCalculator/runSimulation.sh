@@ -16,7 +16,7 @@ C_BCL=1                                     # Contador do BCL a ser executado
 
 MAX_NELEM=100                                # Numero maximo de elementos que serao testados
 MAX_BCL=500                                 # Numero maximo de BCL que serao testados
-MAX_MESH=10                                 # Numero maximo de malhas que serao testados
+MAX_MESH=5                                 # Numero maximo de malhas que serao testados
 
 
 echo "======= RUNNING STEADY STATE SIMULATION ======="
