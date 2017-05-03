@@ -122,7 +122,8 @@ void writeMeshToFile (Mesh *mesh, char *filename)
 {
     if (mesh != NULL)
     {
-        changeExtension(filename);
+        //changeExtension(filename);
+        printf("[!] Mesh file will be saved in :> %s\n",filename);
         FILE *file = fopen(filename,"w+");
         if (!file) printf("[-] ERROR! Opening file '%s'\n",filename);
         fprintf(file,"%d %d %lf\n",mesh->nElem,mesh->nPoints,mesh->h);
