@@ -20,6 +20,9 @@ const int num_eq = 4;
 // Stimulus current
 const double v_stim__Nob = 1000.0;  
 
+// Basic cycle length
+const double cycle_length = 500.0;
+
 // Initial conditions
 const double v0__Nob = -75.5344986658;
 const double m0__Nob = 0.0605467272;

@@ -1,8 +1,5 @@
 #include "../include/noble.h"
 
-// Cycle length
-double cycle_length;
-
 void setInitialConditions__Nob (double *y, int num_eq)
 {
     y[0] = v0__Nob;
@@ -19,15 +16,10 @@ void setFunctions__Nob (Func *f, int num_eq)
     f[3] = dndt__Nob;
 }
 
-void setCycleLength (double bcl)
-{
-    cycle_length = bcl;
-}
-
 double I_Stim__Nob (int point, double t)
 {
     // Somente os 2 primeiros pontos ficam como celulas de estimulo
-    if (point <= 2)
+    if (point <= 5)
     {
         double min_time, max_time;
         for (int k = 0; k < 20; k++)

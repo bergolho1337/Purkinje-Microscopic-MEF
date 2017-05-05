@@ -18,7 +18,10 @@ typedef double (*Func) (int point, double t, double vm, double m, double h, doub
 const int num_eq = 4;
 
 // Stimulus current
-const double v_stim__Nob = 1000.0;  
+const double v_stim__Nob = 1000.0;
+
+// Cycle length
+const double cycle_length = 500.0;  
 
 // Initial conditions
 const double v0__Nob = -75.5344986658;

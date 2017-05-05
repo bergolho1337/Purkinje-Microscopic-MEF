@@ -55,7 +55,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     monoFEM->functions = buildFunctions();
 
     // Atribuir o ciclo basico de pacing
-    setCycleLength(atof(argv[5]));
+    //setCycleLength(atof(argv[5]));
 
     // Atribuir as condicoes iniciais
     setInitialConditionsModel_FromFile(monoFEM,argv[4]); 
@@ -72,7 +72,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     #endif
 
     // Atribuir pontos em que iremos calcular a velocidade
-    setVelocityPoints(monoFEM->dx,8,78);
+    setVelocityPoints(monoFEM->dx,58,258);
 
     #ifdef DEBUG
     printInfoModel(monoFEM);

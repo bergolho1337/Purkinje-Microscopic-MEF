@@ -33,8 +33,6 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     }
     // Montar o nome do arquivo do steady-state
     sprintf(monoFEM->filename,"steadystate%d.dat",atoi(argv[4]));
-    // Atribuir valor ao BCL (basic cycle length)
-    setBCL(atof(argv[5]));
 
     // Alocar memoria e setar as condicoes iniciais
     // ** Lembrando que o elemento de Hermite possui 2*N o numero de pontos
@@ -54,7 +52,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     monoFEM->functions = buildFunctions();
 
     // Atribuir as condicoes iniciais 
-    setInitialConditionsModel(monoFEM);
+    setInitialConditionsModel(monoFEM,argc,argv);
 
     // Construir a matriz global do sistema linear ligado a solucao da EDP
     assembleMatrix(monoFEM);
@@ -68,7 +66,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     #endif
 
     // Atribuir pontos em que iremos calcular a velocidade
-    setVelocityPoints(monoFEM->dx,8,208);
+    //setVelocityPoints(monoFEM->dx,8,208);
 
     #ifdef DEBUG
     printInfoModel(monoFEM);
@@ -98,17 +96,30 @@ void printInfoModel (MonodomainFEM *monoFEM)
 }
 
 // Atribuir as condicoes iniciais para todos os pontos da malha
-void setInitialConditionsModel (MonodomainFEM *monoFEM)
+void setInitialConditionsModel (MonodomainFEM *monoFEM, int argc, char *argv[])
 {
-  int i, np;
-  np = monoFEM->nPoints;
-  for (i = 0; i < np; i++)
+  // Se o usuario nao passar o 6 argumento na linha de comando, inicializar com os valores padroes do modelo celular
+  if (argc-1 == 4)
   {
-    monoFEM->VOld[i] = v0__Nob;
-    monoFEM->mOld[i] = m0__Nob;
-    monoFEM->hOld[i] = h0__Nob;
-    monoFEM->nOld[i] = n0__Nob;
+    int i, np;
+    np = monoFEM->nPoints;
+    for (i = 0; i < np; i++)
+    {
+      monoFEM->VOld[i] = v0__Nob;
+      monoFEM->mOld[i] = m0__Nob;
+      monoFEM->hOld[i] = h0__Nob;
+      monoFEM->nOld[i] = n0__Nob;
+    }
   }
+  // Senao atribuir as condicoes iniciais a partir do arquivo passado
+  // *** Entra aqui a partir do shell script
+  else
+  {
+    FILE *steadyFile = fopen(argv[5],"r");
+    fclose(steadyFile);
+    exit(1);
+  }
+  
 }
 
 void setInitialConditionsModel_FromFile (MonodomainFEM *monoFEM, char *filename)
@@ -369,8 +380,8 @@ void solveMonodomain (MonodomainFEM *monoFEM)
     printProgress2(i,M);
 
     // Escreve no .vtk
-    if (i % 10 == 0)
-      writeVTKFile(monoFEM->VOld,monoFEM->points,monoFEM->map,monoFEM->nPoints,monoFEM->nElem,i);
+    //if (i % 10 == 0)
+    //  writeVTKFile(monoFEM->VOld,monoFEM->points,monoFEM->map,monoFEM->nPoints,monoFEM->nElem,i);
 
     // Escrever a solucao estacionaria
     if (i == 40000)

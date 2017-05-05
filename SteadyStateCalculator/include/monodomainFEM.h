@@ -35,6 +35,7 @@ struct Bifurcation;
 // Estrutura do resolvedor da equacao do Monodominio
 struct MonodomainFEM
 {
+  int id;                                     // Identificador da malha sendo utilizada
   int nElem;                                  // Numero de elementos a serem utilizados
   int nPoints;                                // Numero de pontos do dominio
   int M;                                      // Numero de subintervalos no tempo
@@ -87,7 +88,7 @@ double* buildGlobalMatrixFromLocal (double *local_A, int *map, int np, int ne);
 double* buildGlobalMatrix (double *A, double *B, double dt, int np);
 void setBoundaryConditions (double *K, int np);
 void scaleFactor (double *V, double scale, int np);
-void setInitialConditionsModel (MonodomainFEM *monoFEM);
+void setInitialConditionsModel (MonodomainFEM *monoFEM, int argc, char *argv[]);
 void setInitialConditionsModel_FromFile (MonodomainFEM *monoFEM, char *filename);
 void calcPropagationVelocity (double *V, double t);
 void findBifurcation (MonodomainFEM *monoFEM);
