@@ -17,9 +17,7 @@ using namespace std;
 //#define DEBUG 1                                       // Flag para debugacao e imprimir informacoes na tela (matrizes e vetores)
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-#define LU                                    // Metodo resolvedor do sistema linear
-
-// Function pointer
+// Ponteiro para funcao
 typedef double (*Func) (int point, double t, double vm, double m, double h, double n);     
 
 /* ============================== CONSTANTES ================================================== */
@@ -36,6 +34,7 @@ struct Bifurcation;
 struct MonodomainFEM
 {
   int id;                                     // Identificador da malha sendo utilizada
+  int nElem_fiber;                            // Numero de elementos por fibra
   int nElem;                                  // Numero de elementos a serem utilizados
   int nPoints;                                // Numero de pontos do dominio
   int M;                                      // Numero de subintervalos no tempo

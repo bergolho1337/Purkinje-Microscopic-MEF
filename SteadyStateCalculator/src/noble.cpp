@@ -1,20 +1,6 @@
 #include "../include/noble.h"
 
-void setInitialConditions__Nob (double *y, int num_eq)
-{
-    y[0] = v0__Nob;
-    y[1] = m0__Nob;
-    y[2] = h0__Nob;
-    y[3] = n0__Nob;
-}
-
-void setFunctions__Nob (Func *f, int num_eq)
-{
-    f[0] = dvdt__Nob;
-    f[1] = dmdt__Nob;
-    f[2] = dhdt__Nob;
-    f[3] = dndt__Nob;
-}
+/* ====================================================================================================== */
 
 double I_Stim__Nob (int point, double t)
 {
@@ -133,3 +119,21 @@ double dndt__Nob (int point, double t, double vm, double m, double h, double n)
 }
 
 /* ====================================================================================================== */
+
+// Atribuir as condicoes iniciais do modelo (default)
+void setInitialConditions__Nob (double *y, int num_eq)
+{
+    y[0] = v0__Nob;
+    y[1] = m0__Nob;
+    y[2] = h0__Nob;
+    y[3] = n0__Nob;
+}
+
+// Atribuir os ponteiros para as funcoes do modelo celular
+void setFunctions__Nob (Func *f, int num_eq)
+{
+    f[0] = dvdt__Nob;
+    f[1] = dmdt__Nob;
+    f[2] = dhdt__Nob;
+    f[3] = dndt__Nob;
+}

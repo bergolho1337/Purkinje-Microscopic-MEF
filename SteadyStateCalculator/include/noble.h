@@ -23,7 +23,7 @@ const double v_stim__Nob = 1000.0;
 // Cycle length
 const double cycle_length = 500.0;  
 
-// Initial conditions
+// Initial conditions (default)
 const double v0__Nob = -75.5344986658;
 const double m0__Nob = 0.0605467272;
 const double h0__Nob = 0.7259001355;
@@ -48,7 +48,6 @@ double g_K2__Nob (double t, double vm, double m, double h, double n);
 double g_K1__Nob (double t, double vm, double m, double h, double n);
 double I_K__Nob (double t, double vm, double m, double h, double n);
 double g_Na__Nob (double t, double vm, double m, double h, double n);
-// Changing the 1.4e+02 to 1.225e+02 we can eliminate the auto-oscilatory behaviour of the Noble model
 double I_Na__Nob (double t, double vm, double m, double h, double n);
 double dvdt__Nob (int point, double t, double vm, double m, double h, double n);
 /* ********************************************************************************************************************** */

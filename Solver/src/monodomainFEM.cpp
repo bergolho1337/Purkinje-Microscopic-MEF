@@ -72,7 +72,8 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     #endif
 
     // Atribuir pontos em que iremos calcular a velocidade
-    setVelocityPoints(monoFEM->dx,58,258);
+    //setVelocityPoints(monoFEM->dx,58,258);   // 1cm
+    setVelocityPoints(monoFEM->dx,29,129);     // 0.5 cm
 
     #ifdef DEBUG
     printInfoModel(monoFEM);

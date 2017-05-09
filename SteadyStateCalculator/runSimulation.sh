@@ -8,9 +8,9 @@
 PROGRAM_NAME="steadyState"                  # Nome do programa
 ARGS="0.1 5000"                             # Argumentos do programa
 MIN_ELEM=150                                # Numero minimo de elementos
-MAX_ELEM=300                                # Numero maximo de elementos
+MAX_ELEM=150                                # Numero maximo de elementos
 MIN_MESH=1                                  # Numero minimo de malhas
-MAX_MESH=3                                  # Numero maximo de malhas
+MAX_MESH=10                                  # Numero maximo de malhas
 FIBER_SIZE=1                                # Tamanho da fibra
 
 echo "======= RUNNING STEADY STATE SIMULATION ======="

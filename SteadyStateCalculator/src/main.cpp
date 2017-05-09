@@ -1,7 +1,7 @@
 /*
 ******************************************
     Autor: Lucas Berg
-    Last Update: 27/04/17
+    Last Update: 08/05/17
 ******************************************
 */
 
@@ -39,7 +39,8 @@ int main (int argc, char *argv[])
     printf("[steady_file] = Arquivo com o estado estacionario da malha anterior.\n");
     printf("[!] DEBUGACAO EH ATIVADA POR FLAG NO ARQUIVO \"monodomainFEM.h\".\n");
     printf("---------------------------------------------------------------------------------------------\n");
-    printf("Exemplo: ./purkinjeFEM 0.1 10000 Malhas/2cm/NElem_50/test2.msh 2\n");
+    printf("Exemplo: ./purkinjeFEM 0.1 5000 Malhas/1.00/E_150/test1.msh 1\n");
+    printf("Exemplo: ./purkinjeFEM 0.1 5000 Malhas/1.00/E_150/test2.msh 2 SteadyState/e-150/steadystate1.dat\n");
     printf("=============================================================================================\n");
     return 1;
   }

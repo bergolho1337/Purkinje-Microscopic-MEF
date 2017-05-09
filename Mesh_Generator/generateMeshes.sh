@@ -1,16 +1,32 @@
+# =========================================================================================================
+# Script para gerar um conjunto de malhas de elementos finitos
+# =========================================================================================================
 #!/bin/bash
 
 # Variables
-MIN_SIZE=1
-MAX_SIZE=2
-C_MESH=1
-MAX_MESH=10
-MIN_ELEM=150
-MAX_ELEM=300
+MIN_SIZE=0.5
+MAX_SIZE=0.5
+MIN_MESH=1
+MAX_MESH=40
+MIN_ELEM=75
+MAX_ELEM=75
+
+if [ ! -e meshGenerator ]; then
+    echo "========================================================================================"
+    echo "[!] Compile the source code ..."
+    make
+    echo "========================================================================================"
+fi
+
+echo "========================================================================================"
+if [ ! -d Mesh-Networks ]; then
+    echo "[!] Making directory Mesh-Networks ..."
+    mkdir Mesh-Networks
+fi
 
 echo "========================================================================================"
 echo "[!] Generating meshes ..."
-for i in $(seq $MIN_SIZE $MAX_SIZE); do
+for i in $(LANG=en_US seq -f "%.2f" $MIN_SIZE 0.5 $MAX_SIZE); do
     #echo "----- Size = $i -----"
     mkdir ./Mesh-Networks/$i
     for j in $(seq $MIN_ELEM 50 $MAX_ELEM); do

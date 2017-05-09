@@ -7,9 +7,9 @@
 PROGRAM_NAME="purkinjeFEM"
 ARGS="0.1 1000"
 MIN_MESH=1                                  # Numero minimo de malhas
-MAX_MESH=3                                  # Numero maximo de malhas
-FIBER_SIZE=1                                # Tamanho da fibra
-NELEM=150                                   # Numero de elementos
+MAX_MESH=13                                  # Numero maximo de malhas
+FIBER_SIZE=0.50                                # Tamanho da fibra
+NELEM=75                                   # Numero de elementos
 
 echo "======= RUNNING BIFURCATION SIMULATION ======="
 echo "FIBER SIZE = $FIBER_SIZE cm"

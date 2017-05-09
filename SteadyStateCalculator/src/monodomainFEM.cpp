@@ -32,7 +32,9 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
       monoFEM->map[i*4+3] = right + monoFEM->nPoints;
     }
     // Montar o nome do arquivo do steady-state
-    sprintf(monoFEM->filename,"steadystate%d.dat",atoi(argv[4]));
+    monoFEM->id = atoi(argv[4]);
+    monoFEM->nElem_fiber = monoFEM->nElem / (monoFEM->id + 1);
+    sprintf(monoFEM->filename,"steadystate%d.dat",monoFEM->id);
 
     // Alocar memoria e setar as condicoes iniciais
     // ** Lembrando que o elemento de Hermite possui 2*N o numero de pontos
@@ -61,9 +63,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     kirchoffCondition_Matrix(monoFEM);
 
     // Decompor a matriz em LU
-    #ifdef LU
     LUDecomposition(monoFEM->K,monoFEM->nPoints*2);
-    #endif
 
     // Atribuir pontos em que iremos calcular a velocidade
     //setVelocityPoints(monoFEM->dx,8,208);
@@ -112,12 +112,28 @@ void setInitialConditionsModel (MonodomainFEM *monoFEM, int argc, char *argv[])
     }
   }
   // Senao atribuir as condicoes iniciais a partir do arquivo passado
-  // *** Entra aqui a partir do shell script
   else
   {
+    int i, j;
+    double v, m, h, n;
     FILE *steadyFile = fopen(argv[5],"r");
+    i = 0;
+    while (fscanf(steadyFile,"%lf %lf %lf %lf",&v,&m,&h,&n) != EOF)
+    {
+      monoFEM->VOld[i] = v;
+      monoFEM->mOld[i] = m;
+      monoFEM->hOld[i] = h;
+      monoFEM->nOld[i] = n;
+      i++;
+    }
+    for (j = i - monoFEM->nElem_fiber; i < monoFEM->nPoints; j++, i++)
+    {
+      monoFEM->VOld[i] = monoFEM->VOld[j];
+      monoFEM->mOld[i] = monoFEM->mOld[j];
+      monoFEM->hOld[i] = monoFEM->hOld[j];
+      monoFEM->nOld[i] = monoFEM->nOld[j];
+    }
     fclose(steadyFile);
-    exit(1);
   }
   
 }
@@ -390,7 +406,6 @@ void solveMonodomain (MonodomainFEM *monoFEM)
     // Resolver a EDP (parte difusiva)
     assembleLoadVector(monoFEM);
     kirchoffCondition_Vector(monoFEM);
-
     solveLinearSystem_LU(monoFEM->K,monoFEM->F,monoFEM->Vstar,monoFEM->nPoints*2);
 
     // Multiplicar os termos da derivada pelo fator de escala
@@ -414,42 +429,6 @@ void solveMonodomain (MonodomainFEM *monoFEM)
   }
   fclose(steadyFile); 
   printf("ok\n");
-}
-
-// Calcula a velocidade de propagacao entre dois pontos
-void calcPropagationVelocity (double *V, double t)
-{
-  if (stage1)
-  {
-    // Potencial do ponto 1 chegou no ponto minimo ?
-    if (V[id_1] < -80.0)
-    {
-      t1 = t;
-      stage2 = true;
-      stage1 = false;
-      printf("\n\n[!] Propagation velocity! Stage 1 clear!\n");
-      printf("t1 = %.10lf\n",t1);
-      printf("V[%d] = %.10lf\n",id_1,V[id_1]);
-    }
-  }
-  else if (stage2)
-  {
-    // Potencial do ponto 2 chegou no ponto minimo ?
-    if (V[id_2] < -80.0)
-    {
-      double velocity;
-      t2 = t;
-      stage2 = false;
-      // Calcula velocidade: v = dx/dt
-      velocity = delta_x / (t2-t1);
-      printf("\n[!] Propagation velocity! Stage 2 clear!\n");
-      printf("t2 = %.10lf\n",t2);
-      printf("V[%d] = %.10lf\n",id_2,V[id_2]);
-      printf("delta_x = %.10lf\n",delta_x);
-      printf("delta_t = %.10lf\n",t2-t1);
-      printf("\n!!!!!!!! Propagation velocity = %lf cm/s !!!!!!!!!!\n",velocity*1000.0);
-    }
-  }
 }
 
 // Aplica a condicao de Kirchoff (conservacao de corrente) nas bifurcacoes na parte da matriz
@@ -512,6 +491,7 @@ void kirchoffCondition_Vector (MonodomainFEM *monoFEM)
   }
 }
 
+// Liberar memoria alocada pelo programa
 void freeMonodomain (MonodomainFEM *monoFEM)
 {
   printf("[!] Liberando memoria ... ");
@@ -536,6 +516,7 @@ void freeMonodomain (MonodomainFEM *monoFEM)
   printf("ok\n");
 }
 
+// Escreve a solucao da iteracao atual em um arquivo .vtk
 void writeVTKFile (double *Vm, Point *points, int *map, int np, int ne, int k)
 {
   FILE *file;
@@ -604,9 +585,46 @@ void printError (char *msg)
   exit(1);
 }
 
+// Atribuir os indices em que a velocidade de propagacao sera calculada
 void setVelocityPoints (double dx, int p1, int p2)
 {
   id_1 = p1;
   id_2 = p2;
   delta_x = (id_2 - id_1)*dx;
+}
+
+// Calcula a velocidade de propagacao entre dois pontos
+void calcPropagationVelocity (double *V, double t)
+{
+  if (stage1)
+  {
+    // Potencial do ponto 1 chegou no ponto minimo ?
+    if (V[id_1] < -80.0)
+    {
+      t1 = t;
+      stage2 = true;
+      stage1 = false;
+      printf("\n\n[!] Propagation velocity! Stage 1 clear!\n");
+      printf("t1 = %.10lf\n",t1);
+      printf("V[%d] = %.10lf\n",id_1,V[id_1]);
+    }
+  }
+  else if (stage2)
+  {
+    // Potencial do ponto 2 chegou no ponto minimo ?
+    if (V[id_2] < -80.0)
+    {
+      double velocity;
+      t2 = t;
+      stage2 = false;
+      // Calcula velocidade: v = dx/dt
+      velocity = delta_x / (t2-t1);
+      printf("\n[!] Propagation velocity! Stage 2 clear!\n");
+      printf("t2 = %.10lf\n",t2);
+      printf("V[%d] = %.10lf\n",id_2,V[id_2]);
+      printf("delta_x = %.10lf\n",delta_x);
+      printf("delta_t = %.10lf\n",t2-t1);
+      printf("\n!!!!!!!! Propagation velocity = %lf cm/s !!!!!!!!!!\n",velocity*1000.0);
+    }
+  }
 }
