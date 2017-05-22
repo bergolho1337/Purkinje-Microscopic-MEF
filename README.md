@@ -12,12 +12,15 @@ Resolve a equação do monodomínio utilizando o Método dos Elementos Finitos u
   - Constrói o esqueleto da malha a ser resolvida.
   - Atualmente está voltada para as simulações ligadas ao estudo do problema de Fonte-Sumidouro nas bifurcações das fibras.
   - A malha de saída do programa está configurada com a extensão .vtk para poder ser visualizada no Paraview. 
-  - Para usar basta passar como argumento para o programa o número de bifurcações e o tamanho de cada fibra.
+  - Para usar basta passar como argumento para o programa o número de bifurcações e o tamanho de cada fibra e definir o nome para o arquivo de saída.
 
 ```sh
 $ make
 $ ./skeletonMesh <xMax> <num_bif> <out_VTK_file>
 ```
+
+  - Pode-se utilizar também o shell script generateSkeleton.sh e definir o tamanho mínimo e máximo de cada fibra e o número mínimo e máximo de malhas.
+  - Dessa forma o script irá gerar um conjunto de malhas indo de [MIN_MESH,MAX_MESH] para cada tamanho de fibra dentro do intervalo [MIN_SIZE,MAX_SIZE].  
 
 # Mesh_Generator
 
