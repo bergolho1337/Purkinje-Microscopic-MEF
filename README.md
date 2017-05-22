@@ -26,6 +26,7 @@ $ ./skeletonMesh <xMax> <num_bif> <out_VTK_file>
 
   - Constrói a malha de elementos finitos a partir da malha vinda do Skeleton_Mesh.
   - Para usar basta passar como argumento para o programa o número de elementos que cada fibra irá possuir e o tamanho de cada fibra (deve ser o mesmo que o usado no Skeleton_Mesh).
+  - Pode-se utilizar o shell script 'generateMeshes.sh' para gerar um conjunto de malhas indo de [MIN_MESH,MAX_MESH]. Para isso deve-se definir o número de elementos e o tamanho de cada fibra. 
 
 ```sh
 $ make
