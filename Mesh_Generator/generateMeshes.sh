@@ -4,12 +4,12 @@
 #!/bin/bash
 
 # Variables
-MIN_SIZE=0.5
-MAX_SIZE=0.5
+MIN_SIZE=0.25
+MAX_SIZE=0.25
 MIN_MESH=1
 MAX_MESH=40
-MIN_ELEM=75
-MAX_ELEM=75
+MIN_ELEM=38
+MAX_ELEM=38
 
 if [ ! -e meshGenerator ]; then
     echo "========================================================================================"

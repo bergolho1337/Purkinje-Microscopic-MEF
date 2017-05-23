@@ -47,6 +47,7 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     monoFEM->nNew = (double*)calloc(monoFEM->nPoints,sizeof(double));
     monoFEM->F = (double*)calloc(monoFEM->nPoints*2,sizeof(double));
     monoFEM->dvdt = (Derivative*)malloc(monoFEM->nPoints*sizeof(Derivative));
+    monoFEM->retro = (Retropropagation*)malloc(sizeof(Retropropagation));
     for (int i = 0; i < monoFEM->nPoints; i++)
       monoFEM->dvdt[i].value = 0;
     
@@ -67,13 +68,17 @@ MonodomainFEM* newMonodomainFEM (int argc, char *argv[])
     kirchoffCondition_Matrix(monoFEM);
 
     // Decompor a matriz em LU
-    #ifdef LU
     LUDecomposition(monoFEM->K,monoFEM->nPoints*2);
-    #endif
 
     // Atribuir pontos em que iremos calcular a velocidade
-    //setVelocityPoints(monoFEM->dx,58,258);   // 1cm
-    setVelocityPoints(monoFEM->dx,29,129);     // 0.5 cm
+    //setVelocityPoints(monoFEM->dx,58,258);   // 1 cm
+    setVelocityPoints(monoFEM->dx,29,129);   // 0.5 cm
+    //setVelocityPoints(monoFEM->dx,14,64);      // 0.25 cm
+
+    // Atribuir o ponto de referencia para a retropropagacao
+    //setRetropropagation(monoFEM->retro,258);   // 1 cm
+    setRetropropagation(monoFEM->retro,129);   // 0.5 cm
+    //setRetropropagation(monoFEM->retro,64);   // 0.25 cm
 
     #ifdef DEBUG
     printInfoModel(monoFEM);
@@ -395,6 +400,9 @@ void solveMonodomain (MonodomainFEM *monoFEM)
     // Calcular o valor da derivada maxima de cada ponto
     calcMaximumDerivative(monoFEM->dvdt,monoFEM->nPoints,t,monoFEM->VOld,monoFEM->VNew);
 
+    // Calcular o valor da derivada espacial minima no ponto de referencia da retropropagacao
+    calcMinimumSpacialDerivative(monoFEM->retro,t,monoFEM->VOld[monoFEM->retro->id],monoFEM->VOld[monoFEM->retro->id_prev]);
+
     #ifdef DEBUG
     printVector("Vstar",monoFEM->Vstar,monoFEM->nPoints*2);
     printVector("VNew",monoFEM->VNew,monoFEM->nPoints*2);
@@ -410,6 +418,10 @@ void solveMonodomain (MonodomainFEM *monoFEM)
   writeMaximumDerivative(monoFEM->dvdt,monoFEM->nPoints);
   // Calcular a velocidade de propagacao nos pontos pre-definidos
   calcVelocity(monoFEM->dvdt);
+
+  // Escrever em arquivo o valor da derivada minima do ponto de referencia
+  // Aonde houver mudanca na ordem de grandeza da derivada eh o ponto em que ocorre bloqueio
+  writeMinimumSpacialDerivative(monoFEM->retro);
 
   printf("ok\n");
 }
@@ -532,6 +544,7 @@ void freeMonodomain (MonodomainFEM *monoFEM)
   free(monoFEM->nOld);
   free(monoFEM->nNew);
   free(monoFEM->dvdt);
+  free(monoFEM->retro);
   free(monoFEM);
   printf("ok\n");
 }
@@ -615,6 +628,24 @@ void setVelocityPoints (double dx, int p1, int p2)
   delta_x = (id_2 - id_1)*dx;
 }
 
+void setRetropropagation (Retropropagation *r, int id)
+{
+  r->id = id;
+  r->id_prev = id-1;
+  r->min_deriv = 9999.0;
+}
+
+// Calcular o menor valor assumido pela derivada espacial no ponto de referencia
+void calcMinimumSpacialDerivative (Retropropagation *r, double t, double v, double v_prev)
+{
+  double dif = v_prev - v;
+  if (dif < 0 && dif < r->min_deriv)
+  {
+    r->min_deriv = dif;
+    r->t = t;
+  }
+}
+
 // Calcula o maior valor das derivadas
 void calcMaximumDerivative (Derivative *dvdt, int nPoints, double t, double *vold, double *vnew)
 {
@@ -636,6 +667,14 @@ void writeMaximumDerivative (Derivative *dvdt, int nPoints)
   for (int i = 0; i < nPoints; i++)
     fprintf(dvdtFile,"Point %d --> || t = %.10lf || max_dvdt = %.10lf ||\n",i,dvdt[i].t,dvdt[i].value);
   fclose(dvdtFile);
+}
+
+void writeMinimumSpacialDerivative (Retropropagation *r)
+{
+  FILE *retroFile = fopen("block.txt","w+");
+  fprintf(retroFile,"The minimum spacial derivative on Node %d happen at t = %.5lf and value is %.10lf\n", \
+  r->id, r->t,r->min_deriv);
+  fclose(retroFile);
 }
 
 void calcVelocity (Derivative *dvdt)

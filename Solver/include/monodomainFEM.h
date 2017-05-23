@@ -17,9 +17,6 @@ using namespace std;
 //#define DEBUG 1                                       // Flag para debugacao e imprimir informacoes na tela (matrizes e vetores)
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-#define LU                                    // Metodo resolvedor do sistema linear
-#define STEADYSTATE                           // Simulacao para capturar o estado estacionario da configuracao
-
 // Function pointer
 typedef double (*Func) (int point, double t, double vm, double m, double h, double n);     
 
@@ -33,6 +30,7 @@ struct MonodomainFEM;
 struct Point;
 struct Bifurcation;
 struct Derivative;
+struct Retropropagation;
 
 // Estrutura do resolvedor da equacao do Monodominio
 struct MonodomainFEM
@@ -61,6 +59,7 @@ struct MonodomainFEM
   double *nNew;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
   double *nOld;                               // Vetor com o valor da variavel de estado de cada ponto no tempo n
   Derivative *dvdt;                           // Vetor das derivadas maximas de cada ponto da malha
+  Retropropagation *retro;                    // Estrutura usada para verificar se houve retropropagacao na simulacao
   vector<Bifurcation> bif;                    // Vetor das bifurcacoes
 }typedef MonodomainFEM;
 
@@ -84,6 +83,15 @@ struct Derivative
   double value;                               // Valor da derivada
 }typedef Derivative;
 
+// Estrutura da verificacao de uma retropropagacao
+struct Retropropagation
+{
+  int id;                                     // Identificador do Node usado como referencia
+  int id_prev;                                // Identificador do Node vizinho ao de referencia
+  double t;                                   // Tempo em que a menor derivada espacial foi registrada
+  double min_deriv;                           // Valor da menor derivada espacial para o Node de referencia
+}typedef Retropropagation;
+
 /* ================================= FUNCTIONS ======================================================= */
 MonodomainFEM* newMonodomainFEM (int argc, char *argv[]);
 void freeMonodomain (MonodomainFEM *monoFEM);
@@ -103,8 +111,10 @@ void findBifurcation (MonodomainFEM *monoFEM);
 void kirchoffCondition_Matrix (MonodomainFEM *monoFEM);
 void kirchoffCondition_Vector (MonodomainFEM *monoFEM);
 void setVelocityPoints (double dx, int p1, int p2);
+void setRetropropagation (Retropropagation *r, int id);
 
 void calcMaximumDerivative (Derivative *dvdt, int nPoints, double t, double *vold, double *vnew);
+void calcMinimumSpacialDerivative (Retropropagation *r, double t, double v, double v_prev);
 void calcVelocity (Derivative *dvdt);
 
 void solveMonodomain (MonodomainFEM *monoFEM);
@@ -112,6 +122,7 @@ void assembleLoadVector (MonodomainFEM *monoFEM);
 void solveEDO (MonodomainFEM *monoFEM, double t);
 
 void writeMaximumDerivative (Derivative *dvdt, int nPoints);
+void writeMinimumSpacialDerivative (Retropropagation *r);
 void writeVTKFile (double *Vm, Point *points, int *map, int np, int ne, int k);
 void writeSteadyStateFile (FILE *steadyFile, int nPoints, double vm[], double m[], double h[], double n[]);
 void printError (char *msg);

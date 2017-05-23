@@ -7,7 +7,7 @@
 PROGRAM_NAME="purkinjeFEM"
 ARGS="0.1 1000"
 MIN_MESH=1                                  # Numero minimo de malhas
-MAX_MESH=13                                  # Numero maximo de malhas
+MAX_MESH=5                                  # Numero maximo de malhas
 FIBER_SIZE=0.50                                # Tamanho da fibra
 NELEM=75                                   # Numero de elementos
 
@@ -37,6 +37,7 @@ for i in $(seq $MIN_MESH $MAX_MESH); do
     # Copy the results in folder VTK to correct one in the Results folder
     cp -r VTK Resultados/
     cp ./velocity.txt Resultados/VTK/velocity$i.txt
+    cp ./block.txt Resultados/VTK/block$i.txt
     # Rename it to the appropriate mesh name
     mv Resultados/VTK Resultados/Mesh_$i
     echo 
